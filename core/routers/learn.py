@@ -69,9 +69,11 @@ def create_resource(resource: ResourceCreate, db: Session = Depends(db_func.get_
     if resource.type == "CodeExample":
         factory = CodeExampleFactory()
         created = factory.create(db, resource)
+        stats.increment_resources()
     elif resource.type == "Quiz":
         factory = QuizFactory()
         created = factory.create(db, resource)
+        stats.increment_resources()
     else:
         raise {"error": "Unsupported resource type"}
     return db_func.get_resourse_by_title(db, created.title)
@@ -100,6 +102,7 @@ def create_course(course: CourseCreate, db: Session = Depends(db_func.get_db)):
             builder.add_resource(Quiz(r.title, r.difficulty, r.question, r.answer))
 
     db_course = builder.build_and_save()
+    stats.increment_courses()
     return db_course
 
 
