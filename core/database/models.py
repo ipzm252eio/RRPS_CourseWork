@@ -44,5 +44,14 @@ class CourseModel(Base):
         backref="courses"
     )
 
+class StatisticsModel(Base):
+    __tablename__ = "statistics"
+    id = Column(Integer, primary_key=True, default=1)
+    lessons_created = Column(Integer, default=0)
+    resources_created = Column(Integer, default=0)
+    courses_built = Column(Integer, default=0)
+    lessons_cloned = Column(Integer, default=0)
+    users = Column(Integer, default=0)
+
 
 Base.metadata.create_all(bind=engine)

@@ -1,34 +1,50 @@
+from core.database.db import SessionLocal
+from core.database import StatisticsModel
+
+
 class StatisticsManager:
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, db=None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.lesson_count = 0
-            cls._instance.resource_count = 0
-            cls._instance.course_count = 0
-            cls._instance.clone_count = 0
+            cls._instance.db = db or SessionLocal()
+            stats = cls._instance.db.query(StatisticsModel).get(1)
+            if not stats:
+                stats = StatisticsModel()
+                cls._instance.db.add(stats)
+                cls._instance.db.commit()
+            cls._instance.model = stats
         return cls._instance
 
     def increment_lessons(self):
-        self.lesson_count += 1
+        self.model.lessons_created += 1
+        self.db.commit()
 
     def increment_resources(self):
-        self.resource_count += 1
+        self.model.resources_created += 1
+        self.db.commit()
 
     def increment_courses(self):
-        self.course_count += 1
+        self.model.courses_built += 1
+        self.db.commit()
 
     def increment_clones(self):
-        self.clone_count += 1
+        self.model.lessons_cloned += 1
+        self.db.commit()
+
+    def increment_users(self):
+        self.model.users += 1
+        self.db.commit()
 
     def report(self):
         return {
-            "lessons_created": self.lesson_count,
-            "resources_created": self.resource_count,
-            "courses_built": self.course_count,
-            "lessons_cloned": self.clone_count
+            'lessons_created': self.model.lessons_created,
+            'resources_created': self.model.resources_created,
+            'courses_built': self.model.courses_built,
+            'lessons_cloned': self.model.lessons_cloned,
+            'registered_users': self.model.users
         }
 
-stats = StatisticsManager()
 
+stats = StatisticsManager()
