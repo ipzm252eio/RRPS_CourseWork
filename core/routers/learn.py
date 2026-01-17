@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from core.database import db_func
+from core.database.models import TestResultModel
 from core.patterns import (
     AdvancedFactory,
     BeginnerFactory
 )
-from core.schemas import ResourceRead, LessonRead, CourseRead
+from core.schemas import ResourceRead, LessonRead, CourseRead, TestReadForStudent, TestSubmission, TestResultResponse
 from core.utils.auth import get_default_user
 from sqlalchemy.orm import Session
 from typing import List
@@ -46,6 +47,23 @@ def list_courses(db: Session = Depends(db_func.get_db)):
     """
     return db_func.get_courses(db)
 
+@router.get('/course/{course_id}/test/{test_id}', response_model=TestReadForStudent)
+def get_test_from_course_by_id(course_id: int, test_id: int, db: Session = Depends(db_func.get_db)):
+    course = db_func.get_course_by_id(db, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail='Course not found')
+    test = db_func.get_test_by_id(db, test_id)
+    if not test:
+        raise HTTPException(status_code=404, detail='Test not found')
+    return db_func.get_test_for_student_by_id(db, test_id)
+
+@router.post('/course/test/submit', response_model=TestResultResponse)
+def submit_test(submission: TestSubmission, db: Session = Depends(db_func.get_db)):
+    test = db_func.get_test_by_id(db, submission.test_id)
+    if not test:
+        raise HTTPException(status_code=404, detail='Test not found')
+    return db_func.save_test_result(db, test, submission)
+
 @router.get('/example/{type}/{level}')
 def get_example(example_type: str, level: str):
     """
@@ -69,3 +87,4 @@ def get_example(example_type: str, level: str):
             raise {"error": "Unsupported example type"}
     else:
         raise {"error": "Unsupported example level"}
+

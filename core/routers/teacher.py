@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from core.utils.auth import get_teacher_user
-from core.schemas import ResourceRead, LessonRead, LessonCreate, ResourceCreate, CourseRead, CourseCreate
+from core.schemas import (
+    LessonRead, LessonCreate, ResourceCreate,
+    CourseRead, CourseCreate, TestRead,
+    TestCreate
+)
 from core.database import LessonModel, ResourceModel, db_func
 from core.patterns import (
     stats,
@@ -74,3 +78,6 @@ def create_course(course: CourseCreate, db: Session = Depends(db_func.get_db)):
     stats.increment_courses()
     return db_course
 
+@router.post('/test', response_model=TestRead)
+def create_test(test: TestCreate, db: Session = Depends(db_func.get_db)):
+    return db_func.create_test(db, test)

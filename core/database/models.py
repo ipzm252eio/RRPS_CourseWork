@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from core.database.db import Base, engine
 
@@ -46,13 +46,45 @@ class CourseModel(Base):
     )
 
 class StatisticsModel(Base):
-    __tablename__ = "statistics"
+    __tablename__ = 'statistics'
     id = Column(Integer, primary_key=True, default=1)
     lessons_created = Column(Integer, default=0)
     resources_created = Column(Integer, default=0)
     courses_built = Column(Integer, default=0)
     lessons_cloned = Column(Integer, default=0)
     users = Column(Integer, default=0)
+
+class TestModel(Base):
+    __tablename__ = 'tests'
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    max_score = Column(Integer, default=100)
+    course_id = Column(Integer, ForeignKey('courses.id'))
+    course = relationship('CourseModel', backref='tests')
+
+class QuestionModel(Base):
+    __tablename__ = 'questions'
+    id = Column(Integer, primary_key=True, index=True)
+    text = Column(String, nullable=False)
+    test_id = Column(Integer, ForeignKey('tests.id'))
+    test = relationship('TestModel', backref='questions')
+
+class AnswerOptionModel(Base):
+    __tablename__ = 'answer_options'
+    id = Column(Integer, primary_key=True, index=True)
+    text = Column(String, nullable=False)
+    is_correct = Column(Boolean, default=False)
+    question_id = Column(Integer, ForeignKey('questions.id'))
+    question = relationship('QuestionModel', backref='options')
+
+class TestResultModel(Base):
+    __tablename__ = 'test_results'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    test_id = Column(Integer, ForeignKey('tests.id'))
+    score = Column(Integer)
+    test = relationship('TestModel', backref='results')
 
 
 Base.metadata.create_all(bind=engine)
