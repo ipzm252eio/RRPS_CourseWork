@@ -34,6 +34,9 @@ def get_resource_by_title(db: Session, title):
 def get_resources_by_level(db: Session, level):
     return db.query(ResourceModel).filter(ResourceModel.difficulty.is_(level)).all()
 
+def get_users(db: Session):
+    return db.query(UserModel).all()
+
 def add_user(db: Session, user: UserCreate) -> UserRead:
     hashed_pw = get_password_hash(user.password)
     db_user = UserModel(username=user.username, hashed_password=hashed_pw)
@@ -45,6 +48,13 @@ def add_user(db: Session, user: UserCreate) -> UserRead:
         username=db_user.username,
         role='student'
     )
+
+def set_role_for_user(db, user_id, role) -> UserRead:
+    db_user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    db_user.role = role
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 def get_user_by_username(db: Session, username: str) -> UserRead:
     return db.query(UserModel).filter(UserModel.username == username).first()
