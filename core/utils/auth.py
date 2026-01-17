@@ -33,7 +33,7 @@ def get_default_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 def get_teacher_user(token: str = Depends(oauth2_scheme), db: Session = Depends(db_func.get_db)):
     user = get_default_user(token, db)
-    if user.role != 'teacher' or user.role != 'admin':
+    if user.role == 'student':
         raise HTTPException(status_code=401, detail='Access denied')
     return user
 
