@@ -1,4 +1,5 @@
 import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from a2wsgi import WSGIMiddleware
 from starlette.types import ASGIApp
@@ -7,7 +8,15 @@ from core.routers import learn_router, auth_router, teacher_router, admin_router
 from core.stats.app import dash_app
 
 
-app = FastAPI(title='Python Learning API with Patterns')
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from core.patterns.stats_manager import get_stats
+    stats = await get_stats()
+    app.state.stats = stats
+    yield
+
+app = FastAPI(title='Python Learning API with Patterns', lifespan=lifespan)
+
 
 app.mount('/stats', cast(ASGIApp, WSGIMiddleware(dash_app.server)), name='Stats')
 

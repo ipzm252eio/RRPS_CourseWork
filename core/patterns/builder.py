@@ -1,30 +1,36 @@
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from core.database.models import CourseModel, ResourceModel
-from sqlalchemy.orm import Session
+
 
 class CourseBuilder:
-    def __init__(self, title: str, db: Session):
+    def __init__(self, title: str, db: AsyncSession):
         self.title = title
         self.resources = []
         self.db = db
 
     def add_resource(self, resource):
+        """Додаємо ресурс у список для курсу"""
         self.resources.append(resource)
         return self
 
-    def build_and_save(self):
-        # створюємо курс у БД
+    async def build_and_save(self):
+        """Створюємо курс у БД та прив’язуємо ресурси"""
         db_course = CourseModel(title=self.title)
         self.db.add(db_course)
-        self.db.commit()
-        self.db.refresh(db_course)
+        await self.db.commit()
+        await self.db.refresh(db_course)
 
-        # прив’язуємо ресурси
+        # Прив’язуємо ресурси
         for r in self.resources:
-            db_resource = self.db.query(ResourceModel).filter(ResourceModel.title == r.title).first()
+            result = await self.db.execute(
+                select(ResourceModel).filter(ResourceModel.title == r.title)
+            )
+            db_resource = result.scalars().first()
             if db_resource:
                 db_course.resources.append(db_resource)
 
-        self.db.commit()
-        self.db.refresh(db_course)
+        await self.db.commit()
+        await self.db.refresh(db_course)
 
         return db_course

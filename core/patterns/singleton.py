@@ -1,50 +1,102 @@
-from core.database.db import SessionLocal
-from core.database import StatisticsModel
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.database.db import async_session_maker
+from core.database.models import StatisticsModel
 
 
 class StatisticsManager:
     _instance = None
+    _model = None
 
-    def __new__(cls, db=None):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.db = db or SessionLocal()
-            stats = cls._instance.db.query(StatisticsModel).get(1)
-            if not stats:
-                stats = StatisticsModel()
-                cls._instance.db.add(stats)
-                cls._instance.db.commit()
-            cls._instance.model = stats
         return cls._instance
 
-    def increment_lessons(self):
-        self.model.lessons_created += 1
-        self.db.commit()
+    @classmethod
+    async def init(cls):
+        """Ініціалізація менеджера статистики (singleton)."""
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if not stats:
+                stats = StatisticsModel(id=1)
+                session.add(stats)
+                await session.commit()
+                await session.refresh(stats)
 
-    def increment_resources(self):
-        self.model.resources_created += 1
-        self.db.commit()
+        instance = cls()
+        # Завантажуємо модель без прив'язки до сесії
+        await instance._reload_model()
+        return instance
 
-    def increment_courses(self):
-        self.model.courses_built += 1
-        self.db.commit()
+    async def _reload_model(self):
+        """Перезавантажити дані моделі з бази."""
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if stats:
+                # Зберігаємо дані, а не об'єкт моделі
+                self._model = {
+                    'lessons_created': stats.lessons_created,
+                    'resources_created': stats.resources_created,
+                    'courses_built': stats.courses_built,
+                    'lessons_cloned': stats.lessons_cloned,
+                    'users': stats.users
+                }
 
-    def increment_clones(self):
-        self.model.lessons_cloned += 1
-        self.db.commit()
+    async def increment_lessons(self):
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if stats:
+                stats.lessons_created += 1
+                await session.commit()
+        await self._reload_model()
 
-    def increment_users(self):
-        self.model.users += 1
-        self.db.commit()
+    async def increment_resources(self):
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if stats:
+                stats.resources_created += 1
+                await session.commit()
+        await self._reload_model()
 
-    def report(self):
+    async def increment_courses(self):
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if stats:
+                stats.courses_built += 1
+                await session.commit()
+        await self._reload_model()
+
+    async def increment_clones(self):
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if stats:
+                stats.lessons_cloned += 1
+                await session.commit()
+        await self._reload_model()
+
+    async def increment_users(self):
+        async with async_session_maker() as session:
+            result = await session.execute(select(StatisticsModel).filter(StatisticsModel.id == 1))
+            stats = result.scalars().first()
+            if stats:
+                stats.users += 1
+                await session.commit()
+        await self._reload_model()
+
+    async def report(self):
+        """Отримати актуальну статистику."""
+        await self._reload_model()
         return {
-            'lessons_created': self.model.lessons_created,
-            'resources_created': self.model.resources_created,
-            'courses_built': self.model.courses_built,
-            'lessons_cloned': self.model.lessons_cloned,
-            'registered_users': self.model.users
+            'lessons_created': self._model['lessons_created'],
+            'resources_created': self._model['resources_created'],
+            'courses_built': self._model['courses_built'],
+            'lessons_cloned': self._model['lessons_cloned'],
+            'registered_users': self._model['users']
         }
-
-
-stats = StatisticsManager()

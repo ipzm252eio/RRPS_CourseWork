@@ -1,21 +1,24 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 
+# Використовуємо асинхронний драйвер для SQLite
+DATABASE_URL = "sqlite+aiosqlite:///./learning.db"
 
-DATABASE_URL = 'sqlite:///./learning.db'
+# Створюємо асинхронний engine
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    future=True
+)
 
-engine = create_engine(DATABASE_URL, connect_args={'check_same_thread': False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Асинхронний sessionmaker
+async_session_maker = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
+    class_=AsyncSession,
+    autoflush=False,
+    autocommit=False
+)
+
+# Базовий клас для моделей
 Base = declarative_base()
-
-# def get_db():
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
-#
-# def add_to_db(db: Session, obj):
-#     db.add(obj)
-#     db.commit()
-#     db.refresh(obj)
