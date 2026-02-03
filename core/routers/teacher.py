@@ -110,4 +110,7 @@ async def create_test(
         test: TestCreate,
         db: AsyncSession = Depends(db_func.get_db)
 ):
+    """
+    Додати новий тест
+    """
     return await db_func.create_test(db, test)

@@ -49,6 +49,9 @@ async def list_courses(db: AsyncSession = Depends(db_func.get_db)):
 
 @router.get('/course/{course_id}/test/{test_id}', response_model=TestReadForStudent)
 async def get_test_from_course_by_id(course_id: int, test_id: int, db: AsyncSession = Depends(db_func.get_db)):
+    """
+    Отримання тестів за id курсу та id тесту
+    """
     course = await db_func.get_course_by_id(db, course_id)
     if not course:
         raise HTTPException(status_code=404, detail='Course not found')
@@ -59,6 +62,9 @@ async def get_test_from_course_by_id(course_id: int, test_id: int, db: AsyncSess
 
 @router.post('/course/test/submit', response_model=TestResultResponse)
 async def submit_test(submission: TestSubmission, db: AsyncSession = Depends(db_func.get_db)):
+    """
+    Прийом відповідей студента на тест
+    """
     test = await db_func.get_test_by_id(db, submission.test_id)
     if not test:
         raise HTTPException(status_code=404, detail='Test not found')
